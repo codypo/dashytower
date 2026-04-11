@@ -8,6 +8,8 @@ let gameState = "MENU";
 let enemies = [], towers = [], projectiles = [], enemyProjectiles = [], floatingTexts = [];
 let waveQueue = [], spawnTimer = 0, nextSpawnDelay = 60, prepTimer = 0, screenShake = 0;
 let selectedTowerType = null, activeTower = null;
+let tnts = [], explosions = [], tntSelected = false;
+const TNT_COST = 75, TNT_DAMAGE = 200, TNT_RADIUS = 130, TNT_FUSE = 180;
 
 const TOWER_DATA = [
     { name: "Ninja",     cost: 100,  range: 160, damage: 12,  speed: 18  }, // very fast
@@ -18,8 +20,8 @@ const TOWER_DATA = [
     { name: "Wizard",    cost: 400,  range: 220, damage: 30,  speed: 80  }, // medium-slow
     { name: "Cannon",    cost: 600,  range: 240, damage: 95,  speed: 140 }, // very slow
     { name: "Dino",      cost: 850,  range: 160, damage: 140, speed: 42  }, // fast chomps
-    { name: "Demon",     cost: 1200, range: 210, damage: 65,  speed: 48  }, // rapid blasts
-    { name: "Elemental", cost: 1800, range: 260, damage: 90,  speed: 115 }, // slow, massive
+    { name: "Demon",     cost: 1200, range: 210, damage: 65,  speed: 28  }, // rapid blasts
+    { name: "Elemental", cost: 1800, range: 260, damage: 90,  speed: 70  }, // slow, massive
 ];
 
 const mapGrid = Array.from({length:12}, () => new Array(20).fill(0));
@@ -842,7 +844,7 @@ function startGame(diff) {
     difficulty = diff;
     gold = diff === 'easy' ? 600 : (diff === 'hard' ? 250 : 400); // INCREASED START GOLD
     lives = diff === 'easy' ? 30 : (diff === 'hard' ? 10 : 20);
-    wave = 1; gameState = "PLAYING";
+    wave = 1; gameState = "PLAYING"; tnts = []; explosions = []; tntSelected = false;
     document.getElementById('menu-overlay').classList.add('hidden');
     generateMap(); updateUI(); initUI(); startWave(); gameLoop();
 }
@@ -898,6 +900,40 @@ function gameLoop() {
     towers = towers.filter(t => { t.update(); t.draw(); return !t.dead; });
     projectiles = projectiles.filter(p => { p.update(); p.draw(); return !p.dead; });
     enemyProjectiles = enemyProjectiles.filter(p => { p.update(); p.draw(); return !p.dead; });
+    tnts = tnts.filter(tnt => {
+        tnt.fuse -= gameSpeed;
+        const flash = tnt.fuse < 60 && Math.floor(Date.now() / 120) % 2 === 0;
+        ctx.save(); ctx.translate(tnt.x, tnt.y);
+        ctx.fillStyle = flash ? '#ff2200' : '#991100';
+        ctx.fillRect(-14, -14, 28, 28);
+        ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 2; ctx.strokeRect(-14, -14, 28, 28);
+        ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(-10,-10); ctx.lineTo(10,10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(10,-10); ctx.lineTo(-10,10); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 8px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('TNT', 0, 1);
+        ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(3, -14); ctx.lineTo(8, -22); ctx.stroke();
+        if(Math.floor(Date.now() / 100) % 2 === 0) { ctx.fillStyle = '#ffdd00'; ctx.beginPath(); ctx.arc(8, -22, 3, 0, Math.PI*2); ctx.fill(); }
+        ctx.restore();
+        if(tnt.fuse <= 0) {
+            enemies.forEach(en => { if(Math.hypot(en.x-tnt.x, en.y-tnt.y) < TNT_RADIUS) { en.hp -= TNT_DAMAGE; if(en.hp <= 0) en.dead = true; } });
+            explosions.push({x: tnt.x, y: tnt.y, r: 10, life: 1.0});
+            floatingTexts.push({x: tnt.x, y: tnt.y - 20, txt: '💥 BOOM!', life: 1.5, color: '#fbbf24'});
+            screenShake = 18;
+            return false;
+        }
+        return true;
+    });
+    explosions = explosions.filter(ex => {
+        ex.life -= 0.04 * gameSpeed; ex.r += 7 * gameSpeed;
+        ctx.save(); ctx.globalAlpha = ex.life * 0.75;
+        const g = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, ex.r);
+        g.addColorStop(0, '#fff'); g.addColorStop(0.25, '#fbbf24'); g.addColorStop(0.6, '#dc2626'); g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+        return ex.life > 0;
+    });
     floatingTexts = floatingTexts.filter(ft => {
         ft.y -= 1.2; ft.life -= 0.02;
         ctx.save(); ctx.globalAlpha = ft.life; ctx.fillStyle = ft.color; ctx.font = "bold 18px Arial"; ctx.fillText(ft.txt, ft.x, ft.y); ctx.restore();
@@ -1097,9 +1133,17 @@ function initUI() {
     TOWER_DATA.forEach(t => {
         const b = document.createElement('button'); b.className = 'tower-btn';
         b.innerHTML = `<div class="btn-top"><span>${t.name}</span><span>${t.cost}g</span></div><div class="btn-stats">Dmg: ${t.damage} | Rng: ${t.range} | ${(120/t.speed).toFixed(1)}/s</div>`;
-        b.onclick = () => { audio.init(); selectedTowerType = t; Array.from(document.getElementsByClassName('tower-btn')).forEach(el=>el.classList.remove('active')); b.classList.add('active'); };
+        b.onclick = () => { audio.init(); selectedTowerType = t; tntSelected = false; Array.from(document.getElementsByClassName('tower-btn')).forEach(el=>el.classList.remove('active')); b.classList.add('active'); };
         container.appendChild(b);
     });
+    const sep = document.createElement('div');
+    sep.style.cssText = 'border-top:1px solid #333;margin:8px 0;';
+    container.appendChild(sep);
+    const tntBtn = document.createElement('button');
+    tntBtn.className = 'tower-btn'; tntBtn.id = 'tnt-btn';
+    tntBtn.innerHTML = `<div class="btn-top"><span>💣 TNT</span><span>${TNT_COST}g</span></div><div class="btn-stats">Dmg: ${TNT_DAMAGE} | Radius: 2 tiles | Fuse: 3s</div>`;
+    tntBtn.onclick = () => { audio.init(); tntSelected = true; selectedTowerType = null; Array.from(document.getElementsByClassName('tower-btn')).forEach(el=>el.classList.remove('active')); tntBtn.classList.add('active'); };
+    container.appendChild(tntBtn);
 }
 
 function updateUI() {
@@ -1110,13 +1154,20 @@ function updateUI() {
 
 canvas.addEventListener('click', (e) => {
     audio.init();
-    const rect = canvas.getBoundingClientRect(), gx = Math.floor((e.clientX - rect.left)/tileSize), gy = Math.floor((e.clientY - rect.top)/tileSize);
+    const rect = canvas.getBoundingClientRect(), cr = canvas.width / rect.width, gx = Math.floor((e.clientX - rect.left)*cr/tileSize), gy = Math.floor((e.clientY - rect.top)*cr/tileSize);
+    if(tntSelected && mapGrid[gy][gx] === 1) {
+        const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+        if(gold < TNT_COST) { floatingTexts.push({x: cx*cr, y: cy*cr, txt: "Too Expensive!", life: 1.0, color: "#f87171"}); }
+        else if(tnts.find(t => t.gx === gx && t.gy === gy)) { floatingTexts.push({x: cx*cr, y: cy*cr, txt: "Already placed!", life: 1.0, color: "#f87171"}); }
+        else { tnts.push({gx, gy, x: gx*tileSize+tileSize/2, y: gy*tileSize+tileSize/2, fuse: TNT_FUSE}); gold -= TNT_COST; updateUI(); }
+        return;
+    }
     if(selectedTowerType && mapGrid[gy][gx] === 0) {
         if(gold >= selectedTowerType.cost) {
             towers.push(new Tower(gx, gy, selectedTowerType));
             mapGrid[gy][gx] = 2; gold -= selectedTowerType.cost; updateUI(); audio.play(100, 'sine', 0.2);
         } else {
-            floatingTexts.push({x: e.clientX - rect.left, y: e.clientY - rect.top, txt: "Too Expensive!", life: 1.0, color: "#f87171"});
+            floatingTexts.push({x: (e.clientX - rect.left)*cr, y: (e.clientY - rect.top)*cr, txt: "Too Expensive!", life: 1.0, color: "#f87171"});
         }
     } else if(mapGrid[gy][gx] === 2) {
         activeTower = towers.find(t => t.gx === gx && t.gy === gy);
@@ -1165,11 +1216,100 @@ document.getElementById('btn-sell').onclick = () => {
 };
 
 document.getElementById('btn-speed').onclick = (e) => {
-    audio.init(); gameSpeed = gameSpeed === 8 ? 2 : gameSpeed + 2; e.target.innerText = `${gameSpeed/2}x Speed`;
+    audio.init(); const speeds = [2, 4, 6, 8]; const idx = (speeds.indexOf(gameSpeed) + 1) % speeds.length; gameSpeed = speeds[idx]; e.target.innerText = `${idx + 1}x Speed`;
 };
 
 document.addEventListener('keydown', e => {
-    if(e.key !== 'p' && e.key !== 'P') return;
-    if(gameState === 'PLAYING') { gameState = 'PAUSED'; }
-    else if(gameState === 'PAUSED') { gameState = 'PLAYING'; requestAnimationFrame(gameLoop); }
+    if(e.key === 'p' || e.key === 'P') {
+        if(gameState === 'PLAYING') { gameState = 'PAUSED'; }
+        else if(gameState === 'PAUSED') { gameState = 'PLAYING'; requestAnimationFrame(gameLoop); }
+    }
+    if((e.key === 'c' || e.key === 'C') && (gameState === 'PLAYING' || gameState === 'PAUSED')) {
+        e.preventDefault();
+        openCheatModal();
+    }
 });
+
+function openCheatModal() {
+    const overlay = document.getElementById('cheat-overlay');
+    const input = document.getElementById('cheat-input');
+    const msg = document.getElementById('cheat-msg');
+    const wasPaused = gameState === 'PAUSED';
+    gameState = 'PAUSED';
+    input.value = '';
+    msg.textContent = '';
+    msg.style.color = '#aaa';
+    overlay.classList.remove('hidden');
+    input.focus();
+
+    function applyCheat() {
+        const code = input.value.trim().toLowerCase();
+        if(code === 'money') {
+            gold += 9999; updateUI();
+            msg.style.color = '#4ade80'; msg.textContent = '💰 9999 gold granted!';
+        } else if(code === 'heart') {
+            lives = 999; updateUI();
+            msg.style.color = '#f472b6'; msg.textContent = '❤️ 999 lives granted!';
+        } else if(code === '20') {
+            wave = 20;
+            enemies = []; waveQueue = []; enemyProjectiles = [];
+            startWave(); updateUI();
+            msg.style.color = '#fbbf24'; msg.textContent = '🌊 Jumped to wave 20!';
+        } else if(code === 'ninja') {
+            const ninjaData = TOWER_DATA.find(t => t.name === 'Ninja');
+            for(let gy = 0; gy < 12; gy++) {
+                for(let gx = 0; gx < 20; gx++) {
+                    if(mapGrid[gy][gx] !== 0) continue;
+                    const nearPath = [[0,1],[0,-1],[1,0],[-1,0]].some(([dy,dx]) => {
+                        const ny = gy+dy, nx = gx+dx;
+                        return ny >= 0 && ny < 12 && nx >= 0 && nx < 20 && mapGrid[ny][nx] === 1;
+                    });
+                    if(!nearPath) continue;
+                    const t = new Tower(gx, gy, ninjaData);
+                    t.upgrades = 3; t.maxHp *= 8; t.hp = t.maxHp;
+                    towers.push(t);
+                    mapGrid[gy][gx] = 2;
+                }
+            }
+            msg.style.color = '#94a3b8'; msg.textContent = '🥷 Ninjas deployed!';
+        } else if(code === 'bluedragon') {
+            const count = difficulty === 'normal' ? 12 + wave * 4 : 8 + wave * 3;
+            enemies = []; enemyProjectiles = [];
+            waveQueue = Array(count).fill(0).map(() => new Enemy(wave, 'blue_dragon'));
+            prepTimer = 0;
+            msg.style.color = '#60a5fa'; msg.textContent = '🐉 Here be blue dragons!';
+        } else {
+            msg.style.color = '#f87171'; msg.textContent = 'Unknown cheat code.';
+            return;
+        }
+        setTimeout(closeCheatModal, 1000);
+    }
+
+    function closeCheatModal() {
+        overlay.classList.add('hidden');
+        submitBtn.removeEventListener('click', applyCheat);
+        cancelBtn.removeEventListener('click', closeCheatModal);
+        input.removeEventListener('keydown', keyHandler);
+        if(!wasPaused && gameState === 'PAUSED') { gameState = 'PLAYING'; }
+    }
+
+    function keyHandler(e) {
+        if(e.key === 'Enter') { e.preventDefault(); applyCheat(); }
+        if(e.key === 'Escape') { e.preventDefault(); closeCheatModal(); }
+    }
+
+    const submitBtn = document.getElementById('cheat-submit');
+    const cancelBtn = document.getElementById('cheat-cancel');
+    submitBtn.addEventListener('click', applyCheat);
+    cancelBtn.addEventListener('click', closeCheatModal);
+    input.addEventListener('keydown', keyHandler);
+}
+
+function scaleGame() {
+    const wrap = document.getElementById('game-wrap');
+    wrap.style.transform = '';
+    const scale = Math.min(window.innerWidth / wrap.offsetWidth, window.innerHeight / wrap.offsetHeight, 1);
+    if(scale < 1) wrap.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', scaleGame);
+scaleGame();
