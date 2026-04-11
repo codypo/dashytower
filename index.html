@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashy's TD: Final Stand</title>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-wrap">
+        <div id="sidebar">
+            <h3 class="fantasy-font" style="color: #fbbf24; margin-top:0;">The Armory</h3>
+            <div id="tower-buttons"></div>
+            <div id="info-panel" class="hidden">
+                <h4 id="info-name" class="fantasy-font">Tower</h4>
+                <div id="info-stats"></div>
+                <button id="btn-upgrade">Upgrade</button>
+                <button id="btn-sell">Sell</button>
+            </div>
+        </div>
+        <div id="game-container">
+            <div id="ui-bar">
+                <span>💰 <span id="gold-val">350</span></span>
+                <span>❤️ <span id="lives-val">20</span></span>
+                <span>🌊 Wave <span id="wave-val">1</span></span>
+                <button id="btn-speed" class="audio-btn">1x Speed</button>
+                <div id="audio-controls">
+                    <button id="btn-music" class="audio-btn">♪</button>
+                    <button id="btn-sfx" class="audio-btn">🔊</button>
+                </div>
+            </div>
+            <canvas id="gameCanvas" width="1280" height="720"></canvas>
+            <div id="menu-overlay" class="overlay">
+                <h1 class="fantasy-font" style="font-size: 4em; color: #fbbf24; margin: 0;">Dashy's TD</h1>
+                <div id="difficulty-btns" style="margin-top: 20px;">
+                    <button onclick="startGame('easy')">Easy</button>
+                    <button onclick="startGame('normal')">Normal</button>
+                    <button onclick="startGame('hard')">Hard</button>
+                </div>
+                <p id="menu-tagline" style="color: #aaa; margin-top: 20px;"></p>
+            </div>
+
+            <div id="gameover-overlay" class="overlay hidden">
+                <div class="end-screen defeat">
+                    <div class="end-icon">💀</div>
+                    <h1 class="fantasy-font">The Forest Falls</h1>
+                    <p class="end-subtitle">The darkness has consumed everything...</p>
+                    <div class="end-stats">
+                        <div class="stat-row"><span>Waves Survived</span><span id="go-waves">—</span></div>
+                        <div class="stat-row"><span>Lives Lost</span><span id="go-lives">—</span></div>
+                        <div class="stat-row"><span>Gold Remaining</span><span id="go-gold">—</span></div>
+                    </div>
+                    <button class="end-btn defeat-btn" onclick="location.reload()">Try Again</button>
+                </div>
+            </div>
+
+            <div id="victory-overlay" class="overlay hidden">
+                <div class="end-screen victory">
+                    <div class="end-icon">🏆</div>
+                    <h1 class="fantasy-font">Victory!</h1>
+                    <p class="end-subtitle">The forest stands. All 20 waves defeated.</p>
+                    <div class="end-stats">
+                        <div class="stat-row"><span>Waves Completed</span><span>20 / 20</span></div>
+                        <div class="stat-row"><span>Lives Remaining</span><span id="vic-lives">—</span></div>
+                        <div class="stat-row"><span>Gold Remaining</span><span id="vic-gold">—</span></div>
+                    </div>
+                    <div id="name-entry">
+                        <p class="lb-prompt">Enter your name for the leaderboard:</p>
+                        <div class="name-row">
+                            <input id="player-name" type="text" maxlength="20" placeholder="Hero name..." class="name-input" />
+                            <button id="btn-submit-score" class="end-btn victory-btn lb-submit">Submit</button>
+                        </div>
+                    </div>
+                    <div id="leaderboard" class="hidden">
+                        <p class="lb-title fantasy-font">Hall of Heroes</p>
+                        <div id="lb-rows"></div>
+                    </div>
+                    <button class="end-btn victory-btn" style="margin-top:14px;" onclick="location.reload()">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
