@@ -860,7 +860,7 @@ function startWave() {
             waveQueue.push(...blueDragons);
         }
     }
-    prepTimer = 400;
+    prepTimer = 800;
 }
 
 function gameLoop() {
@@ -1155,6 +1155,12 @@ function updateUI() {
 canvas.addEventListener('click', (e) => {
     audio.init();
     const rect = canvas.getBoundingClientRect(), cr = canvas.width / rect.width, gx = Math.floor((e.clientX - rect.left)*cr/tileSize), gy = Math.floor((e.clientY - rect.top)*cr/tileSize);
+    const waveInProgress = prepTimer <= 0 && (enemies.length > 0 || waveQueue.length > 0);
+    if(difficulty === 'hard' && waveInProgress && (tntSelected || selectedTowerType) && mapGrid[gy][gx] !== 2) {
+        const cx = (e.clientX - rect.left)*cr, cy = (e.clientY - rect.top)*cr;
+        floatingTexts.push({x: cx, y: cy, txt: "Can't build mid-wave!", life: 1.2, color: "#f87171"});
+        return;
+    }
     if(tntSelected && mapGrid[gy][gx] === 1) {
         const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
         if(gold < TNT_COST) { floatingTexts.push({x: cx*cr, y: cy*cr, txt: "Too Expensive!", life: 1.0, color: "#f87171"}); }
@@ -1202,6 +1208,11 @@ document.getElementById('btn-upgrade').onclick = () => {
     showTowerInfo(activeTower);
     updateUI();
     audio.play(600, 'sine', 0.3, 0.06);
+};
+
+document.getElementById('btn-close-panel').onclick = () => {
+    activeTower = null;
+    document.getElementById('info-panel').classList.add('hidden');
 };
 
 document.getElementById('btn-sell').onclick = () => {

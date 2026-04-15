@@ -8,8 +8,10 @@ body { background: #0a0a0a; color: #eee; font-family: sans-serif; display: flex;
 .tower-btn.active { background: #2d2d1a; border-color: #fbbf24; color: #fbbf24; box-shadow: inset 0 0 10px rgba(251,191,36,0.2); }
 .btn-top { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px; pointer-events: none; }
 .btn-stats { font-size: 0.75em; opacity: 0.6; pointer-events: none; }
-#info-panel { background: #111; border: 1px solid #fbbf24; padding: 12px; border-radius: 4px; font-size: 0.85em; }
+#info-panel { background: #111; border: 1px solid #fbbf24; padding: 12px; border-radius: 4px; font-size: 0.85em; position: relative; }
 #info-panel button { width: 100%; margin-top: 5px; cursor: pointer; background: #333; color: #fff; border: 1px solid #555; padding: 6px; }
+#btn-close-panel { position: absolute; top: 6px; right: 6px; width: auto !important; margin-top: 0 !important; padding: 2px 7px !important; background: transparent !important; border: none !important; color: #888 !important; font-size: 1em; line-height: 1; cursor: pointer; }
+#btn-close-panel:hover { color: #fff !important; }
 #game-container { position: relative; }
 #ui-bar { position: absolute; width: 100%; height: 45px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-around; align-items: center; z-index: 10; font-family: 'MedievalSharp'; pointer-events: none; }
 #ui-bar button, #ui-bar div { pointer-events: auto; }
