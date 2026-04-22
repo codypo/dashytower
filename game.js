@@ -189,30 +189,30 @@ class Enemy {
 
         if(this.type === 'blue_dragon') {
             this.hp = (500 + waveNum * 120) * diff;
-            this.speed = (0.75 + Math.random() * 0.25) * (difficulty === 'hard' ? 1.1 : 1);
+            this.speed = (0.375 + Math.random() * 0.125) * (difficulty === 'hard' ? 1.1 : 1);
             this.reward = 140 + waveNum * 5;
             this.breathRange = 320; this.breathCooldown = 180; this.breathTimer = Math.random() * 90;
             this.breathActive = 0; this.breathTargetX = 0; this.breathTargetY = 0;
         } else if(this.type === 'dragon') {
             this.hp = (300 + waveNum * 80) * diff;
-            this.speed = (0.9 + Math.random() * 0.3) * (difficulty === 'hard' ? 1.1 : 1);
+            this.speed = (0.45 + Math.random() * 0.15) * (difficulty === 'hard' ? 1.1 : 1);
             this.reward = 80 + waveNum * 3;
             this.breathRange = 190; this.breathCooldown = 220; this.breathTimer = Math.random() * 100;
             this.breathActive = 0; this.breathTargetX = 0; this.breathTargetY = 0;
         } else if(this.type === 'goblin') {
             this.hp = (30 + waveNum * 12) * diff;
-            this.speed = (1.6 + Math.random() * 0.5) * (difficulty === 'hard' ? 1.2 : 1);
+            this.speed = (0.8 + Math.random() * 0.25) * (difficulty === 'hard' ? 1.2 : 1);
             this.reward = 30 + waveNum;
             this.healRange = 160; this.healCooldown = 130; this.healTimer = Math.random() * 60;
             this.healAmount = 20 + waveNum * 4; this.healPulse = 0;
         } else if(this.type === 'heavy') {
             this.hp = (120 + waveNum * 50) * diff;
-            this.speed = (1.2 + Math.random() * 0.4) * (difficulty === 'hard' ? 1.2 : 1);
+            this.speed = (0.6 + Math.random() * 0.2) * (difficulty === 'hard' ? 1.2 : 1);
             this.reward = 25 + waveNum;
             this.shootTimer = Math.random() * 80; this.shootCooldown = 120; this.shootRange = 150;
         } else {
             this.hp = (50 + waveNum * 30) * diff;
-            this.speed = (1.8 + Math.random() * 0.6) * (difficulty === 'hard' ? 1.2 : 1);
+            this.speed = (0.9 + Math.random() * 0.3) * (difficulty === 'hard' ? 1.2 : 1);
             this.reward = 15 + waveNum;
         }
         this.maxHp = this.hp;
